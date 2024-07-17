@@ -24,33 +24,34 @@ def userQuery():
     
     if date not in daily_intake:
         daily_intake[date] = []
-
     count = 0
     while True:
         content = input("Enter what you ate for this meal:\n")
         full_content = content
+        
         
         while True:
             # First GPT-4 call to track meal details
             completion = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are a gym assistant for Akshat Tiwari that helps him track the amount of calories that they are intaking, and helps them stay consistent. You want to ensure that he eats around 2000 calories per day. At the end of each response you have, indicate whether you are expecting a response from the user or not. If you are expecting a response add RESPONSE EXPECTED to the end of your response. You have to know the exact amount of food that is being eaten to generate a very accurate response and estimate to how many calories one eats. Ask follow up questions to accurately estimate the amount of calories in the meal, but don't worry about other meals in the day unless the user specifies."},
+                    {"role": "system", "content": "You are a gym assistant for Akshat Tiwari that helps him track the amount of calories that they are intaking, and helps them stay consistent. You want to ensure that he eats around 2000 calories per day. At the end of each response you have, indicate whether you are expecting a response from the user or not. If you are expecting a response add RESPONSE EXPECTED to the end of your response. If you know how many calories there are in the meal already, don't add RESPONSE EXPECTED to the end of your response."},
                     {"role": "user", "content": content}
                 ]
             )
 
             response = completion.choices[0].message.content
+            
             print(response)
             count += 1
             
-            if "RESPONSE EXPECTED" not in response or count>3:
+            if "RESPONSE EXPECTED" not in response or count > 3:
                 break
             
             response += "\n"
             new_content = input(response)
             content = new_content
-            full_content += " " + new_content
+            full_content += " " + new_content + "\n"
 
         # Second GPT-4 call to estimate calories
         calorie_estimation = client.chat.completions.create(
@@ -68,6 +69,7 @@ def userQuery():
         calories = parse_calories(calorie_response)
         
         # Log the meal
+        meal_count = len(daily_intake[date]) + 1
         meal_entry = {
             "meal": full_content,
             "date": date,
@@ -76,8 +78,9 @@ def userQuery():
         }
         daily_intake[date].append(meal_entry)
         
-        # Store meal entry in Firestore
-        db.collection("daily_intake").add(meal_entry)
+        # Store meal entry in Firestore with a structured identifier
+        meal_id = f"{date.replace('-', '')}_meal_{meal_count}"
+        db.collection("daily_intake").document(meal_id).set(meal_entry)
         
         if input("Do you want to enter another meal? (y/n): ").lower() != 'y':
             break
