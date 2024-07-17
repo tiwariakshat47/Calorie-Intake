@@ -3,6 +3,7 @@ from firebase_admin import credentials, firestore
 from openai import OpenAI
 from datetime import datetime
 from apikey import apikey
+import re
 
 cred = credentials.Certificate("calorie-tracker-2dac3-firebase-adminsdk-34cxu-ff72e0f85e.json")
 firebase_admin.initialize_app(cred)
@@ -24,41 +25,39 @@ def userQuery():
     if date not in daily_intake:
         daily_intake[date] = []
 
+    count = 0
     while True:
         content = input("Enter what you ate for this meal:\n")
+        full_content = content
         
-        # First GPT-4 call to track meal details
-        completion = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a gym assistant for Akshat Tiwari that helps him track the amount of calories that they are intaking, and helps them stay consistent. You want to ensure that he eats around 2000 calories per day. At the end of each response you have, indicate whether you are expecting a response from the user or not. If you are expecting a response add RESPONSE EXPECTED to the end of your response. You have to know the exact amount of food that is being eaten to generate a very accurate response and estimate to how many calories one eats. Ask as many follow up questions as necessary."},
-                {"role": "user", "content": content}
-            ]
-        )
+        while True:
+            # First GPT-4 call to track meal details
+            completion = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a gym assistant for Akshat Tiwari that helps him track the amount of calories that they are intaking, and helps them stay consistent. You want to ensure that he eats around 2000 calories per day. At the end of each response you have, indicate whether you are expecting a response from the user or not. If you are expecting a response add RESPONSE EXPECTED to the end of your response. You have to know the exact amount of food that is being eaten to generate a very accurate response and estimate to how many calories one eats. Ask follow up questions to accurately estimate the amount of calories in the meal, but don't worry about other meals in the day unless the user specifies."},
+                    {"role": "user", "content": content}
+                ]
+            )
 
-        response = completion.choices[0].message.content
-        print(response)
-        if("RESONSE EXPECTED" in response):
+            response = completion.choices[0].message.content
+            print(response)
+            count += 1
+            
+            if "RESPONSE EXPECTED" not in response or count>3:
+                break
+            
+            response += "\n"
             new_content = input(response)
-            completion2 = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a gym assistant for Akshat Tiwari that helps him track the amount of calories that they are intaking, and helps them stay consistent. You want to ensure that he eats around 2000 calories per day. At the end of each response you have, indicate whether you are expecting a response from the user or not. If you are expecting a response add RESPONSE EXPECTED to the end of your response."},
-                {"role": "user", "content": new_content}
-            ]
-        )
-        
+            content = new_content
+            full_content += " " + new_content
 
-        
-        if("RESONSE EXPECTED" in response):
-            response += completion2.choices[0].message.content
-        
         # Second GPT-4 call to estimate calories
         calorie_estimation = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a calorie estimation assistant. Estimate the number of calories in the meal described below."},
-                {"role": "user", "content": content}
+                {"role": "user", "content": full_content}
             ]
         )
         
@@ -70,7 +69,7 @@ def userQuery():
         
         # Log the meal
         meal_entry = {
-            "meal": content,
+            "meal": full_content,
             "date": date,
             "time": datetime.now().strftime("%H:%M:%S"),
             "calories": calories
@@ -80,13 +79,12 @@ def userQuery():
         # Store meal entry in Firestore
         db.collection("daily_intake").add(meal_entry)
         
-        if "RESPONSE EXPECTED" not in response:
+        if input("Do you want to enter another meal? (y/n): ").lower() != 'y':
             break
 
 def parse_calories(calorie_response):
     # Extract the calorie value from the response
     # Assuming the response is something like "The estimated number of calories is 500."
-    import re
     match = re.search(r'(\d+)', calorie_response)
     if match:
         return int(match.group(1))
