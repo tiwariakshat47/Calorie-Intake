@@ -14,7 +14,6 @@ client = OpenAI(api_key=apikey)
 daily_intake = {}
 
 def get_meal_count(date):
-    # Query Firestore to get the number of meals recorded for the given date
     meals_ref = db.collection("daily_intake").where("date", "==", date)
     meals = meals_ref.stream()
     return sum(1 for _ in meals)
@@ -31,7 +30,6 @@ def userQuery():
         
         
         while True:
-            # First GPT-4 call to track meal details
             completion = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
@@ -53,7 +51,6 @@ def userQuery():
             content = new_content
             full_content += " " + new_content + "\n"
 
-        # Second GPT-4 call to estimate calories
         calorie_estimation = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -65,10 +62,8 @@ def userQuery():
         calorie_response = calorie_estimation.choices[0].message.content
         print("Calorie Estimation:", calorie_response)
         
-        # Parse calories from the response
         calories = parse_calories(calorie_response)
         
-        # Log the meal
         meal_count = len(daily_intake[date]) + 1
         meal_entry = {
             "meal": full_content,
@@ -78,7 +73,6 @@ def userQuery():
         }
         daily_intake[date].append(meal_entry)
         
-        # Store meal entry in Firestore with a structured identifier
         meal_id = f"{date.replace('-', '')}_meal_{meal_count}"
         db.collection("daily_intake").document(meal_id).set(meal_entry)
         
@@ -86,8 +80,6 @@ def userQuery():
             break
 
 def parse_calories(calorie_response):
-    # Extract the calorie value from the response
-    # Assuming the response is something like "The estimated number of calories is 500."
     match = re.search(r'(\d+)', calorie_response)
     if match:
         return int(match.group(1))
