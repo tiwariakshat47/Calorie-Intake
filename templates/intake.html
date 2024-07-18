@@ -12,12 +12,18 @@
                 <th>Time</th>
                 <th>Meal</th>
                 <th>Calories</th>
+                <th>Action</th>
             </tr>
             {% for meal in meals %}
             <tr>
                 <td>{{ meal.time }}</td>
                 <td>{{ meal.meal }}</td>
                 <td>{{ meal.calories }}</td>
+                <td>
+                    <form action="/remove_meal/{{ meal.id }}" method="post" style="display:inline;">
+                        <input type="submit" value="Remove">
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </table>

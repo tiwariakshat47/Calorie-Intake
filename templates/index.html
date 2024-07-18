@@ -7,10 +7,26 @@
     <h1>Calorie Tracker</h1>
     <form action="/add_meal" method="post">
         <label for="content">Enter what you ate for this meal:</label><br>
-        <input type="text" id="content" name="content"><br><br>
+        <input type="text" id="content" name="content" required><br><br>
         <input type="submit" value="Submit">
     </form>
     <br>
     <a href="/view_intake">View Daily Intake</a>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% if category == 'response' %}
+            <div>
+              <p>{{ message }}</p>
+              <form action="/add_meal" method="post">
+                <input type="text" id="content" name="content" required><br><br>
+                <input type="submit" value="Respond">
+              </form>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 </body>
 </html>
