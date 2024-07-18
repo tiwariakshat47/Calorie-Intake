@@ -36,8 +36,31 @@ def get_current_calories():
         total_calories += meal['calories']
     return total_calories
 
+def reset_daily_calories():
+    # Check the date of the last update
+    last_update_doc = db.collection("metadata").document("last_update").get()
+    if last_update_doc.exists:
+        last_update_date = last_update_doc.to_dict().get("date")
+    else:
+        last_update_date = None
+
+    current_date = datetime.now().strftime("%Y-%m-%d")
+
+    if last_update_date != current_date:
+        # Archive the previous day's intake
+        docs = db.collection("daily_intake").stream()
+        for doc in docs:
+            meal = doc.to_dict()
+            meal_id = doc.id
+            db.collection("archive").document(meal_id).set(meal)
+            db.collection("daily_intake").document(meal_id).delete()
+
+        # Update the last update date
+        db.collection("metadata").document("last_update").set({"date": current_date})
+
 @app.route('/')
 def home():
+    reset_daily_calories()
     current_calories = get_current_calories()
     remaining_calories = TARGET_CALORIES - current_calories
     ai_response = session.pop('ai_response', None)
@@ -108,6 +131,7 @@ def remove_meal(meal_id):
 
 @app.route('/view_intake')
 def view_intake():
+    reset_daily_calories()
     daily_intake = {}
     docs = db.collection("daily_intake").stream()
 
@@ -123,6 +147,22 @@ def view_intake():
     current_calories = get_current_calories()
     remaining_calories = TARGET_CALORIES - current_calories
     return render_template('intake.html', daily_intake=daily_intake, current_calories=current_calories, remaining_calories=remaining_calories)
+
+@app.route('/view_archive')
+def view_archive():
+    archive_data = {}
+    docs = db.collection("archive").stream()
+
+    for doc in docs:
+        meal = doc.to_dict()
+        date = meal['date']
+        meal_id = doc.id
+        meal['id'] = meal_id
+        if date not in archive_data:
+            archive_data[date] = []
+        archive_data[date].append(meal)
+
+    return render_template('archive.html', archive_data=archive_data)
 
 if __name__ == "__main__":
     app.run(debug=True)

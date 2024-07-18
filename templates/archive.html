@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Archived Calorie Intake</title>
+</head>
+<body>
+    <h1>Archived Calorie Intake</h1>
+    <a href="/">Back to Home</a>
+    <div>
+        {% for date, meals in archive_data.items() %}
+            <h2>{{ date }}</h2>
+            <table border="1">
+                <tr>
+                    <th>Time</th>
+                    <th>Meal</th>
+                    <th>Calories</th>
+                </tr>
+                {% for meal in meals %}
+                <tr>
+                    <td>{{ meal.time }}</td>
+                    <td>{{ meal.meal }}</td>
+                    <td>{{ meal.calories }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endfor %}
+    </div>
+</body>
+</html>
