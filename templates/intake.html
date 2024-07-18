@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daily Intake</title>
+</head>
+<body>
+    <h1>Daily Intake Summary</h1>
+    {% for date, meals in daily_intake.items() %}
+        <h2>{{ date }}</h2>
+        <table border="1">
+            <tr>
+                <th>Time</th>
+                <th>Meal</th>
+                <th>Calories</th>
+            </tr>
+            {% for meal in meals %}
+            <tr>
+                <td>{{ meal.time }}</td>
+                <td>{{ meal.meal }}</td>
+                <td>{{ meal.calories }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+    <br>
+    <a href="/">Add Another Meal</a>
+</body>
+</html>
