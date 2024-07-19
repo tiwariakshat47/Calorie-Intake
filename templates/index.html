@@ -5,6 +5,9 @@
 </head>
 <body>
     <h1>Calorie Tracker</h1>
+    <p>Target Calories: 1800</p>
+    <p>Current Calories: {{ current_calories }}</p>
+    <p>Remaining Calories: {{ remaining_calories }}</p>
     <form action="/add_meal" method="post">
         <label for="content">Enter what you ate for this meal:</label><br>
         <input type="text" id="content" name="content" required><br><br>
@@ -12,21 +15,15 @@
     </form>
     <br>
     <a href="/view_intake">View Daily Intake</a>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          {% if category == 'response' %}
-            <div>
-              <p>{{ message }}</p>
-              <form action="/add_meal" method="post">
-                <input type="text" id="content" name="content" required><br><br>
-                <input type="submit" value="Respond">
-              </form>
-            </div>
-          {% endif %}
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+
+    {% if ai_response %}
+        <h2>AI Response</h2>
+        <p>{{ ai_response }}</p>
+        <form action="/continue_interaction" method="post">
+            <label for="content">Response:</label><br>
+            <input type="text" id="content" name="content" required><br><br>
+            <input type="submit" value="Respond">
+        </form>
+    {% endif %}
 </body>
 </html>

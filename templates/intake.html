@@ -5,6 +5,9 @@
 </head>
 <body>
     <h1>Daily Intake Summary</h1>
+    <p>Target Calories: 1800</p>
+    <p>Current Calories: {{ current_calories }}</p>
+    <p>Remaining Calories: {{ remaining_calories }}</p>
     {% for date, meals in daily_intake.items() %}
         <h2>{{ date }}</h2>
         <table border="1">
